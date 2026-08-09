@@ -5,6 +5,7 @@ categories: [Networking, Security]
 tags: [cisco, vlan, routing, dhcp, soho, packet-tracer, troubleshooting]
 project: "SOHO Network Design"
 description: "A personal technical write-up on designing and implementing a Small Office Home Office (SOHO) network, detailing my approach to Inter-VLAN routing, secure wireless access, and the challenges I overcame."
+pageviews: true
 ---
 
 ## Executive Summary
