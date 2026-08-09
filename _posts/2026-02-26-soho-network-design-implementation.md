@@ -3,7 +3,8 @@ title: "My SOHO Network Design: VLANs, ROAS, and DHCP Implementation Journey"
 date: 2026-02-26 09:00:00 +0000
 categories: [Networking, Security]
 tags: [cisco, vlan, routing, dhcp, soho, packet-tracer, troubleshooting]
-description: A personal technical write-up on designing and implementing a Small Office Home Office (SOHO) network, detailing my approach to Inter-VLAN routing, secure wireless access, and the challenges I overcame.
+project: "SOHO Network Design"
+description: "A personal technical write-up on designing and implementing a Small Office Home Office (SOHO) network, detailing my approach to Inter-VLAN routing, secure wireless access, and the challenges I overcame."
 ---
 
 ## Executive Summary
