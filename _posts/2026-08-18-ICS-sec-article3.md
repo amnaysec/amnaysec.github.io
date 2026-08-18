@@ -1,6 +1,6 @@
 ---
 title: "Deploying Wazuh on Xubuntu 24.04 and Enrolling a Windows 10 OT Station"
-date: 2026-08-18
+date: 2026-08-18 12:32:00 +0100
 project: "ICS-Security"
 categories: [Cybersecurity, ICS-OT]
 tags: [Wazuh, Sysmon, Xubuntu, Windows10, deployment, OT-monitoring, agent-enrollment]
