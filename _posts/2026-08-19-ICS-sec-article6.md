@@ -123,7 +123,7 @@ Sat 07/18/2026 21:48:08 - Remediation complete
 
 Five processes in five seconds. The entire PowerShell execution context was gone.
 
-![Dashboard Post-Remediation Alerts](/assets/img/posts/wazuh_project/nouveaux/screen_19_dashboard_alertes_active_response.png)
+![Dashboard Post-Remediation Alerts](/assets/img/posts/wazuh_project/nouveaux/screen_19_dashboard_alertes_active_response)
 *Figure 5 - The alert list after the incident. Rules 100004 and 100008 are visible. 
 Rules 100001, 100003, and 100006 did not fire because the phases that would have 
 triggered them never executed.*
