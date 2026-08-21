@@ -132,7 +132,7 @@ triggered them never executed.*
 
 After the remediation, the `C:\IndustrialAssets\` directory was checked.
 
-![Industrial Assets Intact](/assets/img/posts/wazuh_project/SCREEN16.png)
+![Industrial Assets Intact](/assets/img/posts/wazuh_project/screen_12_industrial_assets.png)
 *Figure 6 - The industrial assets directory after the incident. No `.WNCRY` files. 
 No encrypted content. The OT station's critical files are intact.*
 
