@@ -1,6 +1,6 @@
 ---
 title: "Writing Custom Wazuh Detection Rules and Mapping to MITRE ATT&CK"
-date: 2026-08-20 09:20:00 +0100
+date: 2026-08-19 09:20:00 +0100
 project: "ICS-Security"
 categories: [Cybersecurity, ICS-OT]
 tags: [Wazuh, MITRE-ATTACK, detection-rules, Sysmon, ICS, OT, behavioral-detection, SOC]
