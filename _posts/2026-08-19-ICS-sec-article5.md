@@ -5,6 +5,7 @@ project: "ICS-Security"
 categories: [Cybersecurity, ICS-OT]
 tags: [Wazuh, MITRE-ATTACK, detection-rules, Sysmon, ICS, OT, behavioral-detection, SOC]
 description: "A deep dive into the custom Wazuh detection rules written to catch each phase of the attack vector, how Sysmon feeds them, and how each rule maps to a specific MITRE ATT&CK technique."
+pageviews: true
 ---
 
 A SIEM is only as good as its rules. Wazuh ships with a large set of native rules 

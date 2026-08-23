@@ -5,6 +5,7 @@ project: "ICS-Security"
 categories: [Cybersecurity, ICS-OT]
 tags: [Wazuh, active-response, ransomware, detection, MITRE-ATTACK, ICS, OT, SOC, incident-response]
 description: "The attack vector runs against the OT engineering station. A detailed look at the alert timeline, what fired and what did not, and how the Active Response mechanism neutralized the threat in 9 seconds."
+pageviews: true
 ---
 
 Everything described in the previous articles leads to this moment. The supervision 
