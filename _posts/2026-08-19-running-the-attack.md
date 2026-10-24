@@ -1,0 +1,179 @@
+---
+title: "Running the Attack: Detection Results and Active Response in Action"
+date: 2026-08-19 09:30:00 +0100
+project: "ICS-Security"
+permalink: /posts/ics-security-attack-results/
+categories: [Cybersecurity, ICS-OT]
+tags: [Wazuh, active-response, ransomware, detection, MITRE-ATTACK, ICS, OT, SOC, incident-response]
+description: "The attack vector runs against the OT engineering station. A detailed look at the alert timeline, what fired and what did not, and how the Active Response mechanism neutralized the threat in 9 seconds."
+pageviews: true
+---
+
+Everything described in the previous articles leads to this moment. The supervision 
+infrastructure is in place, the detection rules are deployed, and the attack vector 
+is ready. This article documents what actually happened when the script ran: the 
+alert timeline, the Active Response configuration and execution, and an honest 
+analysis of the results including what Wazuh caught, what it missed, and why.
+
+## Before Running the Attack
+
+Two things needed to happen before launching the script.
+
+On the Xubuntu server, a TCP listener was started on port 9999 to simulate the 
+C2 infrastructure. Without an active listener, the Phase 2 connection attempt 
+would be refused immediately, and Sysmon would not generate a NetworkConnect event 
+because refused connections do not produce Event ID 3. The listener needed to be 
+up before the script started.
+
+On the Windows station, Windows Defender real-time protection was disabled. In a 
+real OT environment, endpoint protection is often absent or severely outdated, 
+which is part of why OT stations are attractive targets. Disabling it here reflects 
+that reality and ensures the attack vector runs without being interrupted by 
+antivirus before Wazuh has a chance to respond.
+
+A timestamp was written to disk immediately before launching the script, giving a 
+precise reference point for MTTD calculation.
+
+## Configuring the Active Response
+
+The Active Response mechanism in Wazuh works by sending a command from the Manager 
+to the target agent when a rule fires above a defined threshold. The agent executes 
+a script locally in response.
+
+The remediation script deployed on the OT station does two things in sequence. 
+First, it runs `taskkill /F /IM powershell.exe /T`, which terminates all PowerShell 
+processes and their child processes forcefully. Second, it calls 
+`netsh advfirewall set allprofiles firewallpolicy blockinbound,blockoutbound`, 
+which blocks all inbound and outbound traffic on the station, isolating it from 
+the rest of the network.
+
+The Manager configuration ties this script to the rules that should trigger it. 
+Rules 100001, 100003, 100004, and 100008 are all at level 15, which is the 
+threshold configured to fire the Active Response. The response is targeted at 
+agent ID 001 (Station-OT) specifically, using the `defined-agent` location 
+directive. That matters: a broadcast response that affects all connected agents 
+would be operationally catastrophic in a real environment with multiple supervised 
+machines.
+
+## The Attack Run
+
+The script launched at a measured time. Each phase printed a timestamp to the 
+PowerShell console as it started, giving a precise execution timeline.
+
+Phase 1 ran immediately. `vssadmin delete shadows /all /quiet` executed in under 
+a second. The shadow copies were gone before any alert was generated. `bcdedit` 
+and `wbadmin` followed in the same second.
+
+**3 seconds after launch**, the first custom rule fired. Rule 100004 matched on 
+the `vssadmin` command line captured by Sysmon Event ID 1. Level 15. The Manager 
+sent the Active Response command to the agent on Station-OT.
+
+The PowerShell process tree was terminated. Five processes were killed in cascade: 
+the main PowerShell session and four child processes that had been spawned by 
+`vssadmin`, `bcdedit`, `wbadmin`, and the script itself.
+
+**9 seconds after the first alert**, the Active Response was complete. The firewall 
+rules were in place. The station was isolated.
+
+Phases 2 through 7 never executed.
+
+## The Alert Dashboard
+
+![Global Alert Dashboard](/assets/img/posts/wazuh_project/nouveaux/screen_13_dashboard_alertes_globales.png)
+*Figure 1 - The Wazuh Dashboard during the attack window. The spike in the timeline 
+corresponds precisely to the moment the script launched.*
+
+The alert list shows the chronological sequence. Rule 92213 fired first, flagging 
+the `PSScriptPolicyTest` file drop by PowerShell at the moment the script started. 
+That is the false positive discussed in the previous article. It is technically 
+correct and operationally irrelevant.
+
+Rule 100004 fired 3 seconds later. That is the first meaningful detection.
+
+Rule 100008 fired after the remediation was already complete. `bcdedit` had 
+executed in Phase 1 alongside `vssadmin`, but the Sysmon event reached the Manager 
+slightly after the `vssadmin` alert, which had already triggered the kill. The 
+alert is accurate. The remediation had already happened by the time it registered.
+
+![Critical Alert Detail](/assets/img/posts/wazuh_project/nouveaux/screen14_détails_d'alerte_15.png)
+*Figure 2 - Detail view of a level 15 alert. The structured fields extracted from 
+the Sysmon event show the exact command line, the process image, and the parent 
+process that triggered the rule.*
+
+![MITRE ATT&CK Dashboard View](/assets/img/posts/wazuh_project/nouveaux/screen15_MITRE.png)
+*Figure 3 - The MITRE ATT&CK view in Wazuh Dashboard after the incident. Discovery, 
+Command and Control, Defense Evasion, Persistence, Execution, and Impact tactics 
+are all represented, mapped automatically from the rule metadata.*
+
+## The Active Response Execution
+
+The remediation log on the OT station tells the story precisely.
+
+![Active Response Log](/assets/img/posts/wazuh_project/nouveaux/screen_18_active_response_logg.png)
+*Figure 4 - The Active Response log on the OT station. Five processes terminated, 
+firewall isolation applied, remediation confirmed complete. Total time from trigger 
+to completion: 5 seconds.*
+Sat 07/18/2026 21:48:03 - Active Response triggered
+SUCCESS: PID 476 terminated
+SUCCESS: PID 7644 terminated
+SUCCESS: PID 6392 terminated
+SUCCESS: PID 5656 terminated
+SUCCESS: PID 7576 terminated
+Ok.
+Sat 07/18/2026 21:48:08 - Machine isolated
+Sat 07/18/2026 21:48:08 - Remediation complete
+
+Five processes in five seconds. The entire PowerShell execution context was gone.
+
+![Dashboard Post-Remediation Alerts](/assets/img/posts/wazuh_project/nouveaux/screen_19_dashboard_alertes_active_response)
+*Figure 5 - The alert list after the incident. Rules 100004 and 100008 are visible. 
+Rules 100001, 100003, and 100006 did not fire because the phases that would have 
+triggered them never executed.*
+
+## The Industrial Assets
+
+After the remediation, the `C:\IndustrialAssets\` directory was checked.
+
+![Industrial Assets Intact](/assets/img/posts/wazuh_project/screen_12_industrial_assets.png)
+*Figure 6 - The industrial assets directory after the incident. No `.WNCRY` files. 
+No encrypted content. The OT station's critical files are intact.*
+
+All 11 files were untouched. The encryption phase never ran. Rules 100001 (`.WNCRY` 
+file creation) and 100003 (Run key persistence) did not fire because the processes 
+responsible for those phases were killed before they started. The absence of those 
+alerts is not a detection gap. It is evidence that the remediation worked.
+
+## The Metrics
+
+Two numbers summarize the detection and response performance.
+
+**MTTD: 3 seconds.** Time from script launch to the first level 15 custom alert 
+(rule 100004). For context, IBM's Cost of Data Breach report puts the industry 
+average MTTD at 204 days. The comparison is not entirely fair, because this 
+environment has rules specifically tuned for the attack being run. But it 
+illustrates what behavioral detection in real time can achieve when the 
+infrastructure is correctly configured.
+
+**MTTR: 9 seconds.** Time from the first alert to confirmed remediation. That 
+covers the Manager processing the alert, sending the Active Response command to 
+the agent, the agent executing the kill and firewall isolation, and writing the 
+confirmation to the log.
+
+| Metric | Value | Industry Reference |
+|---|---|---|
+| MTTD | 3 seconds | 204 days (IBM CODB 2024) |
+| MTTR | 9 seconds | Variable |
+| Industrial files compromised | 0 out of 11 | - |
+| Shadow copies | Deleted (irreversible) | - |
+| False positives | 1 (rule 92217) | - |
+
+The shadow copy row is the honest part of this table. The backups were gone in 
+under a second. Wazuh detected the attack in 3 seconds. That gap is not a Wazuh 
+failure. It is a structural property of reactive detection systems, and it has 
+direct implications for how OT environments should be protected beyond the SIEM 
+layer. The final article covers this in detail.
+
+Part 7 examines what this project reveals about the limits of behavioral detection 
+in OT environments, and what a complete defense posture would look like beyond 
+Wazuh alone.
+
